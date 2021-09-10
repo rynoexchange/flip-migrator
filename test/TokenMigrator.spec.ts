@@ -16,14 +16,15 @@ contract('TokenMigrator', (accounts) => {
 
     await newToken.transfer(migrator.address, await newToken.totalSupply());
     await oldToken.approve(migrator.address, '100000', { from: accounts[1] });
+    await newToken.approve(migrator.address, '100000', { from: accounts[1] });
   });
 
   describe('migrate', () => {
     it('transfers new tokens correctly', async () => {
-      const initialOldTokenBalance = await oldToken.balanceOf(accounts[1]); 
+      const initialOldTokenBalance = await oldToken.balanceOf(accounts[1]);
       const initialNewTokenBalance = await newToken.balanceOf(accounts[1]);
       await migrator.migrate('10000', { from: accounts[1] });
-      const lastOldTokenBalance = await oldToken.balanceOf(accounts[1]); 
+      const lastOldTokenBalance = await oldToken.balanceOf(accounts[1]);
       const lastNewTokenBalance = await newToken.balanceOf(accounts[1]);
       const migratorOldTokenBalance = await oldToken.balanceOf(migrator.address);
       const newTokenHoldingBalance = await newToken.balanceOf(migrator.address);
@@ -45,6 +46,18 @@ contract('TokenMigrator', (accounts) => {
       }
 
       throw new Error('There is problem');
+    });
+  });
+
+  describe('rollback', () => {
+    it('transfers old tokens correctly', async () => {
+      await migrator.migrate('10000', { from: accounts[1] });
+      const newTokenBalance1 = await newToken.balanceOf(accounts[1]);
+      await migrator.rollback('5000', { from: accounts[1] });
+      const newTokenBalance2 = await newToken.balanceOf(accounts[1]);
+
+      expect(newTokenBalance1.toString()).to.eq('10000');
+      expect(newTokenBalance2.toString()).to.eq('5000');
     });
   });
 });
